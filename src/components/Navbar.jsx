@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUpRight, MapPin, Menu, MessageCircle, Phone, X } from 'lucide-react'
+import { ArrowUpRight, LayoutDashboard, LogIn, LogOut, MapPin, Menu, MessageCircle, Phone, UserPlus, X } from 'lucide-react'
+import { useUserAuth } from '../context/UserAuthContext'
 import { business, navLinks } from '../data/site'
 import { cx } from '../lib/cx'
 import { telHref, whatsappHref } from '../lib/links'
+import { navigate } from '../lib/navigate'
 import Button from './ui/Button'
 import Logo from './ui/Logo'
 
@@ -10,10 +12,25 @@ import Logo from './ui/Logo'
 export default function Navbar({ currentPath: propPath }) {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const auth = useUserAuth()
+  const isLoggedIn = auth.status === 'ready'
   const currentPath = propPath ?? (window.location.pathname.replace(/\/$/, '') || '/')
   const active = navLinks.find((link) => link.href === currentPath)?.id || 'home'
   const menuRef = useRef(null)
   const toggleRef = useRef(null)
+
+  const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
+    try {
+      await auth.logout()
+      setOpen(false)
+      navigate('/', { replace: true })
+    } finally {
+      setLoggingOut(false)
+    }
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -114,7 +131,7 @@ export default function Navbar({ currentPath: propPath }) {
       <div className="shell flex h-[74px] items-center justify-between gap-4 lg:h-20">
         <Logo onClick={closeMenu} />
 
-        <nav aria-label="Primary" className="hidden items-center gap-5 lg:flex xl:gap-7">
+        <nav aria-label="Primary" className="hidden items-center gap-4 lg:flex xl:gap-6">
           {navLinks.map((link) => {
             const isActive = active === link.id
             return (
@@ -123,7 +140,7 @@ export default function Navbar({ currentPath: propPath }) {
                 href={link.href}
                 aria-current={isActive ? 'page' : undefined}
                 className={cx(
-                  'group relative py-2 text-[10px] font-semibold uppercase tracking-[0.18em] transition-colors duration-300 xl:text-[11px]',
+                  'group relative whitespace-nowrap py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition-colors duration-300 xl:text-[11px] xl:tracking-[0.18em]',
                   isActive ? 'text-gold' : 'text-white/70 hover:text-bone',
                 )}
               >
@@ -140,9 +157,44 @@ export default function Navbar({ currentPath: propPath }) {
           })}
         </nav>
 
-        <div className="flex items-center gap-2.5">
-          <div className="hidden lg:block">
-            <Button href="/membership" size="sm" icon={ArrowUpRight}>
+        <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 lg:flex">
+            {isLoggedIn ? (
+              <>
+                <a
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1.5 border border-gold/50 bg-gold/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-gold transition-colors hover:bg-gold hover:text-ink"
+                >
+                  <LayoutDashboard className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
+                  Dashboard
+                </a>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className="inline-flex items-center gap-1.5 border border-white/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-bone transition-colors hover:border-gold hover:text-gold disabled:opacity-50"
+                >
+                  <LogOut className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
+                  {loggingOut ? 'Signing out…' : 'Logout'}
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  className="px-2.5 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75 transition-colors hover:text-gold"
+                >
+                  Login
+                </a>
+                <a
+                  href="/register"
+                  className="border border-white/20 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-bone transition-colors hover:border-gold hover:text-gold"
+                >
+                  Register
+                </a>
+              </>
+            )}
+            <Button href="/membership" size="sm" icon={ArrowUpRight} className="px-3.5 py-2 xl:px-5 xl:py-2.5">
               Join Now
             </Button>
           </div>
@@ -233,6 +285,60 @@ export default function Navbar({ currentPath: propPath }) {
 
           <div className="mt-auto pt-8">
             <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">
+              Member account
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {isLoggedIn ? (
+                <>
+                  <Button
+                    href="/dashboard"
+                    onClick={closeMenu}
+                    variant="outline"
+                    size="sm"
+                    icon={LayoutDashboard}
+                    iconPosition="left"
+                  >
+                    Dashboard
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    variant="dark"
+                    size="sm"
+                    icon={LogOut}
+                    iconPosition="left"
+                  >
+                    {loggingOut ? 'Signing out…' : 'Logout'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    href="/login"
+                    onClick={closeMenu}
+                    variant="outline"
+                    size="sm"
+                    icon={LogIn}
+                    iconPosition="left"
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    href="/register"
+                    onClick={closeMenu}
+                    variant="dark"
+                    size="sm"
+                    icon={UserPlus}
+                    iconPosition="left"
+                  >
+                    Register
+                  </Button>
+                </>
+              )}
+            </div>
+
+            <p className="mt-6 text-[10px] uppercase tracking-[0.22em] text-white/40">
               Ready to start?
             </p>
             <Button

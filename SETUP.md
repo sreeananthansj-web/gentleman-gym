@@ -15,15 +15,16 @@ Open **SQL Editor** and run these files from `supabase/migrations/` **in order**
 3. `20261118000003_storage.sql`
 4. `20261118000004_enquiry_rpc_and_stats.sql`
 5. `20261118000005_seed_existing_content.sql` (copies the trainer, gallery images and FAQs already on your site into the database; membership plans are NOT seeded because the site shows no prices)
+6. `20261125000001_user_profiles.sql` (adds the `user_profiles` table, auto-creation trigger, and strict RLS policies for public member registration & dashboard)
 
 CLI alternative: `supabase link --project-ref <ref>` then `supabase db push`.
 
 ## 3. Configure Authentication
 **Authentication → Sign In / Providers**
-- Turn **OFF** "Allow new users to sign up" (there must be no public registration).
-- Keep Email provider enabled; keep "Confirm email" as you like (the admin is created pre-confirmed).
+- Keep **Email** provider enabled and **"Allow new users to sign up"** turned **ON** so gym members can register at `/register`. (Admin rights are strictly isolated in `public.admin_profiles` — signed-up users never become admins.)
+- Keep "Confirm email" as you like (the admin is created pre-confirmed).
 
-**Authentication → URL Configuration**: set **Site URL** to your live domain (e.g. `https://www.yourgym.com`).
+**Authentication → URL Configuration**: set **Site URL** to your live domain (e.g. `https://www.yourgym.com`) and add `https://www.yourgym.com/**` (plus `http://localhost:5173/**` for local dev) under **Redirect URLs** so email verification and `/reset-password` links work.
 
 ## 4. Create the first administrator
 1. **Authentication → Users → Add user → Create new user**

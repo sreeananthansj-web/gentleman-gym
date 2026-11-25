@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /dashboard
 
 # Add the production sitemap URL after the live domain is confirmed.

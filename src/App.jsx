@@ -13,11 +13,19 @@ import WhatsAppFloat from './components/ui/WhatsAppFloat'
 import WhyChooseUs from './components/WhyChooseUs'
 import FAQ from './components/FAQ'
 import Gallery from './components/Gallery'
+import { useUserAuth } from './context/UserAuthContext'
+import UserAuthProvider from './context/UserAuthProvider'
+import { navigate } from './lib/navigate'
 import LegalPage from './LegalPage'
 import NotFound from './NotFound'
 
 // The admin panel is a separate chunk so public visitors never download it.
 const AdminApp = lazy(() => import('./admin/AdminApp'))
+const UserLoginPage = lazy(() => import('./pages/auth/UserLoginPage'))
+const UserRegisterPage = lazy(() => import('./pages/auth/UserRegisterPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
+const UserDashboardPage = lazy(() => import('./pages/user/UserDashboardPage'))
 
 const pageDetails = {
   '/about': { eyebrow: 'Our story', title: 'Built on discipline. Driven by progress.', subtitle: 'Get to know Gentleman Gym and the community behind every rep.' },
@@ -57,6 +65,56 @@ function PageLoader() {
     <div className="loader-track"><span /></div>
     <span className="sr-only">Loading page…</span>
   </div>
+}
+
+function PublicAndUserApp({ path }) {
+  const { recoveryMode } = useUserAuth()
+
+  useEffect(() => {
+    if (recoveryMode && path !== '/reset-password') {
+      navigate('/reset-password', { replace: true })
+    }
+  }, [recoveryMode, path])
+
+  const fallback = (
+    <div className="min-h-screen bg-ink" role="status" aria-label="Loading page" />
+  )
+
+  if (path === '/login') return <Suspense fallback={fallback}><UserLoginPage /></Suspense>
+  if (path === '/register') return <Suspense fallback={fallback}><UserRegisterPage /></Suspense>
+  if (path === '/forgot-password') return <Suspense fallback={fallback}><ForgotPasswordPage /></Suspense>
+  if (path === '/reset-password') return <Suspense fallback={fallback}><ResetPasswordPage /></Suspense>
+  if (path === '/dashboard') return <Suspense fallback={fallback}><UserDashboardPage /></Suspense>
+  if (path === '/privacy') return <LegalPage type="privacy" />
+  if (path === '/terms') return <LegalPage type="terms" />
+  if (path !== '/' && !pageDetails[path]) return <NotFound />
+
+  let content
+  if (path === '/') {
+    content = <><Hero /><Marquee /><About /><Facilities /><LadiesGents /><Trainers /><Gallery /><WhyChooseUs /><Membership /><FAQ /><Contact /></>
+  } else {
+    const pageContent = {
+      '/about': <About />,
+      '/facilities': <Facilities />,
+      '/ladies-gents': <LadiesGents />,
+      '/trainer': <Trainers />,
+      '/gallery': <Gallery />,
+      '/membership': <Membership />,
+      '/contact': <Contact />,
+      '/why-us': <WhyChooseUs />,
+      '/faq': <FAQ />,
+    }
+    content = <><PageIntro details={pageDetails[path]} />{pageContent[path]}</>
+  }
+
+  return <>
+    <PageLoader key={path} />
+    <a href="#main" className="skip-link">Skip to content</a>
+    <Navbar currentPath={path} />
+    <main id="main">{content}</main>
+    <Footer />
+    <WhatsAppFloat />
+  </>
 }
 
 export default function App() {
@@ -113,34 +171,10 @@ export default function App() {
   if (path === '/admin' || path.startsWith('/admin/')) {
     return <Suspense fallback={<div className="min-h-screen bg-ink" role="status" aria-label="Loading admin panel" />}><AdminApp path={path} /></Suspense>
   }
-  if (path === '/privacy') return <LegalPage type="privacy" />
-  if (path === '/terms') return <LegalPage type="terms" />
-  if (path !== '/' && !pageDetails[path]) return <NotFound />
 
-  let content
-  if (path === '/') {
-    content = <><Hero /><Marquee /><About /><Facilities /><LadiesGents /><Trainers /><Gallery /><WhyChooseUs /><Membership /><FAQ /><Contact /></>
-  } else {
-    const pageContent = {
-      '/about': <About />,
-      '/facilities': <Facilities />,
-      '/ladies-gents': <LadiesGents />,
-      '/trainer': <Trainers />,
-      '/gallery': <Gallery />,
-      '/membership': <Membership />,
-      '/contact': <Contact />,
-      '/why-us': <WhyChooseUs />,
-      '/faq': <FAQ />,
-    }
-    content = <><PageIntro details={pageDetails[path]} />{pageContent[path]}</>
-  }
-
-  return <>
-    <PageLoader key={path} />
-    <a href="#main" className="skip-link">Skip to content</a>
-    <Navbar currentPath={path} />
-    <main id="main">{content}</main>
-    <Footer />
-    <WhatsAppFloat />
-  </>
+  return (
+    <UserAuthProvider>
+      <PublicAndUserApp path={path} />
+    </UserAuthProvider>
+  )
 }
